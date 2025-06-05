@@ -10,22 +10,8 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import MapView, {
-  Callout,
-  Marker,
-  PROVIDER_GOOGLE,
-  Region,
-} from 'react-native-maps';
-
-const INITIAL_REGION = {
-  latitude: 28.6139, // New Delhi
-  longitude: 77.2090,
-  latitudeDelta: 0.5,
-  longitudeDelta: 0.5,
-};
 
 export default function Map() {
-  const mapRef = useRef<any>(null);
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
 
@@ -37,7 +23,7 @@ export default function Map() {
       headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
       headerTitle: 'Map View',
       headerRight: () => (
-        <TouchableOpacity onPress={focusMap}>
+        <TouchableOpacity onPress={() => {}}>
           <View style={{ paddingHorizontal: 12 }}>
             <Text style={{ color: '#fff', fontWeight: '600' }}>Focus</Text>
           </View>
@@ -46,59 +32,36 @@ export default function Map() {
     });
   }, [colorScheme]);
 
-  const focusMap = () => {
-    const delhiRegion = {
-      latitude: 28.6139,
-      longitude: 77.2090,
-      latitudeDelta: 0.2,
-      longitudeDelta: 0.2,
-    };
-    mapRef.current?.animateToRegion(delhiRegion, 1000);
-  };
-
-  const onMarkerSelected = (marker: any) => {
-    Alert.alert(marker.name);
-  };
-
-  const calloutPressed = (ev: any) => {
-    console.log(ev);
-  };
-
-  const onRegionChange = (region: Region) => {
-    console.log(region);
-  };
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.wrapper}>
+        <View style={styles.mapCard}>
+          <View style={styles.webMapFallback}>
+            <Text style={styles.webMapText}>
+              Maps are not supported in web version.
+              {markers.map((marker, index) => (
+                <View key={index} style={styles.markerInfo}>
+                  <Text style={styles.title}>{marker.name}</Text>
+                  <Text style={styles.subtitle}>
+                    Lat: {marker.latitude.toFixed(3)}, Lon: {marker.longitude.toFixed(3)}
+                  </Text>
+                </View>
+              ))}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrapper}>
       <View style={styles.mapCard}>
-        <MapView
-          style={StyleSheet.absoluteFillObject}
-          initialRegion={INITIAL_REGION}
-          showsUserLocation
-          showsMyLocationButton={Platform.OS === 'android'}
-          provider={PROVIDER_GOOGLE}
-          ref={mapRef}
-          onRegionChangeComplete={onRegionChange}
-        >
-          {markers.map((marker, index) => (
-            <Marker
-              key={index}
-              title={marker.name}
-              coordinate={marker}
-              onPress={() => onMarkerSelected(marker)}
-            >
-              <Callout onPress={calloutPressed}>
-                <View style={styles.callout}>
-                  <Text style={styles.title}>{marker.name}</Text>
-                  <Text style={styles.subtitle}>
-                    Lat: {marker.latitude.toFixed(3)}, Lon:{' '}
-                    {marker.longitude.toFixed(3)}
-                  </Text>
-                </View>
-              </Callout>
-            </Marker>
-          ))}
-        </MapView>
+        {Platform.select({
+          ios: () => import('./NativeMap').then(m => m.default()),
+          android: () => import('./NativeMap').then(m => m.default()),
+          default: () => null,
+        })}
       </View>
     </View>
   );
@@ -109,8 +72,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f1f5f9',
     padding: 10,
-    width:'100%',
-    height:'100%'
+    width: '100%',
+    height: '100%'
   },
   mapCard: {
     flex: 1,
@@ -122,12 +85,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-     width:'100%',
-    height:'100%',
+    width: '100%',
+    height: '100%',
   },
-  callout: {
-    padding: 8,
-    maxWidth: 200,
+  webMapFallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  webMapText: {
+    fontSize: 16,
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  markerInfo: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
   },
   title: {
     fontWeight: 'bold',
